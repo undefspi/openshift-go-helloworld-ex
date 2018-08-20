@@ -1,0 +1,6 @@
+#This is only needed if you manually create the buildconfig and specify a from in the docker strategy.
+#and in addtion you want to track the changes that image as well
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: base-centos7

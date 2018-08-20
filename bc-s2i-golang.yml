@@ -1,0 +1,34 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: s2i-golang.yml
+  namespace: myproject
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 's2i-golang:latest'
+  runPolicy: Serial
+  source:
+    git:
+      ref: master
+      uri: 'https://github.com/nmasse-itix/golang-s2i'
+    type: Git
+  strategy:
+    dockerStrategy:
+    #  from:
+    #    kind: ImageStreamTag
+    #    name: 'base-centos7:latest'
+    type: Docker
+  triggers:
+    - imageChange:
+      type: ImageChange
+    - type: ConfigChange
+    - generic:
+        secret: 38ccfe1c7270109f
+      type: Generic
+    - github:
+        secret: 259d9ff7a282e8ff
+      type: GitHub
+status:
+  lastVersion: 0

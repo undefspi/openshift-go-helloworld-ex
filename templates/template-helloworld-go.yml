@@ -1,0 +1,177 @@
+apiversion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: helloworld-go.yml
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: s2i-golang
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: helloworld-go
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: s2i-golang.yml
+    namespace: myproject
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 's2i-golang:latest'
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: 'https://github.com/nmasse-itix/golang-s2i'
+      type: Git
+    strategy:
+      dockerStrategy:
+      #  from:
+      #    kind: ImageStreamTag
+      #    name: 'base-centos7:latest'
+      type: Docker
+    triggers:
+      - imageChange:
+        type: ImageChange
+      - type: ConfigChange
+      - generic:
+          secret: 38ccfe1c7270109f
+        type: Generic
+      - github:
+          secret: 259d9ff7a282e8ff
+        type: GitHub
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: helloworld-go
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'helloworld-go:latest'
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: 'https://github.com/emilevauge/go-helloworld'
+      type: Git
+    strategy:
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 's2i-golang:latest'
+            namespace: myproject
+        type: Source
+    triggers:
+      - imageChange:
+        type: ImageChange
+      - type: ConfigChange
+      - generic:
+          secret: 38ccfe1c7270109f
+        type: Generic
+      - github:
+          secret: 259d9ff7a282e8ff
+        type: GitHub
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: helloworld-go
+    name: helloworld-go
+    namespace: myproject
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: helloworld-go
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: helloworld-go
+          deploymentconfig: helloworld-go
+      spec:
+        containers:
+          - image: >-
+            imagePullPolicy: Always
+            name: helloworld-go
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+            - helloworld-go
+          from:
+            kind: ImageStreamTag
+            name: 'helloworld-go:latest'
+            namespace: myproject
+        type: ImageChange
+      - type: ConfigChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: helloworld-go
+    name: helloworld-go
+    namespace: myproject   
+  spec:
+    selector:       
+      deploymentconfig: helloworld-go
+    ports:
+      - name: 8080-tcp
+        port: 8080
+        protocol: TCP
+        targetPort: 9999
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: helloworld-go
+    name: helloworld-go
+    namespace: myproject
+  spec:
+    host: helloworld-go-myproject.172.20.219.152.nip.io
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: helloworld-go
+      weight: 100
+    wildcardPolicy: None
+  status:
+    ingress:
+      - conditions:
+          - lastTransitionTime: '2018-08-18T19:51:40Z'
+            status: 'True'
+            type: Admitted
+        host: helloworld-go-myproject.172.20.219.152.nip.io
+        routerName: router
+        wildcardPolicy: None

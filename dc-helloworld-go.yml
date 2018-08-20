@@ -1,0 +1,55 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: helloworld-go
+  name: helloworld-go
+  namespace: myproject
+spec:
+  replicas: 1
+  selector:
+    deploymentconfig: helloworld-go
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: helloworld-go
+        deploymentconfig: helloworld-go
+    spec:
+      containers:
+        - image: >-
+          imagePullPolicy: Always
+          name: helloworld-go
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  test: false
+  triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - helloworld-go
+        from:
+          kind: ImageStreamTag
+          name: 'helloworld-go:latest'
+          namespace: myproject
+      type: ImageChange
+    - type: ConfigChange

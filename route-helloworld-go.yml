@@ -1,0 +1,25 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: helloworld-go
+  name: helloworld-go
+  namespace: myproject
+spec:
+  host: helloworld-go-myproject.172.20.219.152.nip.io
+  port:
+    targetPort: 8080-tcp
+  to:
+    kind: Service
+    name: helloworld-go
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+    - conditions:
+        - lastTransitionTime: '2018-08-18T19:51:40Z'
+          status: 'True'
+          type: Admitted
+      host: helloworld-go-myproject.172.20.219.152.nip.io
+      routerName: router
+      wildcardPolicy: None
